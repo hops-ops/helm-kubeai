@@ -1,0 +1,41 @@
+# code: language=yaml
+#
+# Helm release for KubeAI
+#
+# KubeAI is an AI Inference Operator for Kubernetes - the easiest way to serve ML models in production.
+# It provides an OpenAI-compatible HTTP API and supports vLLM, Ollama, and other model servers.
+#
+
+{{- $kai := $state.kubeai }}
+
+---
+apiVersion: helm.m.crossplane.io/v1beta1
+kind: Release
+metadata:
+  name: {{ $kai.releaseName }}
+  annotations:
+    {{ setResourceNameAnnotation "helm-release-kubeai" }}
+  labels: {{ $kai.labels | toJson }}
+spec:
+  managementPolicies: {{ $kai.managementPolicies | toJson }}
+  forProvider:
+    chart:
+      name: kubeai
+      repository: https://www.kubeai.org
+      version: 0.23.1
+    namespace: {{ $kai.namespace }}
+    {{- if $kai.overrideAllValues }}
+    values:
+      {{- toYaml $kai.overrideAllValues | nindent 6 }}
+    {{- else }}
+    values:
+      fullnameOverride: kubeai
+      nameOverride: kubeai
+      {{- if $kai.values }}
+      {{- toYaml $kai.values | nindent 6 }}
+      {{- end }}
+    {{- end }}
+  rollbackLimit: 3
+  providerConfigRef:
+    name: {{ $kai.providerConfigRef.name }}
+    kind: {{ $kai.providerConfigRef.kind }}

@@ -1,0 +1,13 @@
+apiVersion: helm.hops.ops.com.ai/v1alpha1
+kind: KubeAI
+metadata:
+  name: kubeai
+  namespace: example-env
+spec:
+  clusterName: example-cluster
+  labels:
+    team: platform
+  namespace: kubeai
+  values:
+    openwebui:
+      enabled: true
