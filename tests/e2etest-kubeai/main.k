@@ -1,7 +1,6 @@
 import datetime
 import math
 import models.io.upbound.dev.meta.v1alpha1 as metav1alpha1
-import models.k8s.apimachinery.pkg.apis.meta.v1 as metav1
 
 # ==============================================================================
 # E2E Test for KubeAI XRD (Kubernetes-only)
@@ -19,16 +18,37 @@ _items = [
         metadata.name = "kubeai-helm"
         spec = {
             crossplane = {
-                version = "2.0.2-up.5"
-                autoUpgrade.channel = "None"
+                autoUpgrade.channel = "Rapid"
             }
+            defaultConditions = ["Ready"]
+            timeoutSeconds = 1800
+            cleanupTimeoutSeconds = 1800
             skipDelete = False
 
             # ==============================================================
-            # extraResources: Helm ProviderConfig with injected identity
+            # extraResources: RBAC and Helm ProviderConfig
             # These are NOT deleted during cleanup
             # ==============================================================
             extraResources = [
+                # Grant cluster-admin to all SAs in crossplane-system namespace
+                # This allows the Helm provider to create namespaces and install charts
+                {
+                    apiVersion = "rbac.authorization.k8s.io/v1"
+                    kind = "ClusterRoleBinding"
+                    metadata.name = "crossplane-system-cluster-admin"
+                    roleRef = {
+                        apiGroup = "rbac.authorization.k8s.io"
+                        kind = "ClusterRole"
+                        name = "cluster-admin"
+                    }
+                    subjects = [
+                        {
+                            kind = "Group"
+                            name = "system:serviceaccounts:crossplane-system"
+                            apiGroup = "rbac.authorization.k8s.io"
+                        }
+                    ]
+                }
                 # Helm ProviderConfig - uses in-cluster identity
                 # Must use helm.m.crossplane.io to match the Release API
                 {
@@ -66,15 +86,6 @@ _items = [
                         providerConfigRef = {
                             name = "default"
                             kind = "ProviderConfig"
-                        }
-                        values = {
-                            # Minimal resources for E2E test
-                            resources = {
-                                requests = {
-                                    cpu = "10m"
-                                    memory = "128Mi"
-                                }
-                            }
                         }
                     }
                 }
