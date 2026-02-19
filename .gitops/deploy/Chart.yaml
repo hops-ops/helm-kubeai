@@ -1,5 +1,0 @@
-apiVersion: v2
-name: helm-kubeai
-version: 0.0.0
-description: GitOps packaging for the KubeAI Crossplane configuration
-appVersion: 0.23.1
